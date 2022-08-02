@@ -30,8 +30,7 @@ class USBHubClass(USBClass):
 
     @mutable('hub_get_hub_status_response')
     def handle_get_hub_status(self, req):
-        i = req.index
-        if i:
+        if i := req.index:
             self.info('GetPortStatus (%d)' % i)
         else:
             self.info('GetHubStatus')

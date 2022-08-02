@@ -86,7 +86,7 @@ class USBCdcDlDevice(USBCDCDevice):
             lines = self.receive_buffer.split(b'\r')
             self.receive_buffer = lines[-1]
             for l in lines[:-1]:
-                self.info('received line: %s' % l)
+                self.info(f'received line: {l}')
 
     def handle_ep2_buffer_available(self):
         # send some junk

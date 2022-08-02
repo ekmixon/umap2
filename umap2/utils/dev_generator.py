@@ -58,16 +58,20 @@ class DescriptorNode(object):
         return def_node
 
     def get_pre(self):
-        # print 'to_code(node_type: %02x)' % (self.node_type)
-        pre_code = ''
-        available_list_types = set([n.node_type for n in self.deps if isinstance(n, ListNode)])
-        known_list_types = set(t for t in self.list_names)
+        available_list_types = {
+            n.node_type for n in self.deps if isinstance(n, ListNode)
+        }
+
+        known_list_types = set(self.list_names)
         if any(x not in known_list_types for x in available_list_types):
             example = [x not in known_list_types for x in available_list_types][0]
             raise Exception('An unknown list found, of type: %02x' % (example))
-        for t in known_list_types:
-            if t not in available_list_types:
-                pre_code += '%s = None\n' % (self.list_names[t])
+        pre_code = ''.join(
+            '%s = None\n' % (self.list_names[t])
+            for t in known_list_types
+            if t not in available_list_types
+        )
+
         for dep in self.deps:
             if isinstance(dep, ListNode):
                 pre_code += dep.get_pre()
@@ -103,8 +107,7 @@ from umap2.core.usb_cs_endpoint import USBCSEndpoint
 class USBMyDevice(USBDevice):
 
     def __init__(self, app, phy, vid=0x%04x, pid=0x%04x, **kwargs):''' % (dep.vendor_id, dep.product_id)
-            res = ''
-            res += 'strings_dict = {}\n'
+            res = '' + 'strings_dict = {}\n'
             res += 'usb_class = None\n'
             res += 'usb_vendor = None\n'
             res += dep.get_pre()
@@ -121,12 +124,10 @@ class ListNode(DescriptorNode):
         super(ListNode, self).__init__(node_type)
 
     def get_pre(self):
-        res = ''.join(dep.get_pre() for dep in self.deps)
-        return res
+        return ''.join(dep.get_pre() for dep in self.deps)
 
     def get_text(self):
-        res = '['
-        res += ','.join(add_indentation(dep.get_text()) for dep in self.deps)
+        res = '[' + ','.join(add_indentation(dep.get_text()) for dep in self.deps)
         res += '\n]'
         return res
 
@@ -147,7 +148,10 @@ def build_init(cls_name, params):
     params.insert(0, ('phy', 'phy'))
     params.insert(0, ('app', 'app'))
     s = '%s(\n    ' % (cls_name)
-    s += ',\n    '.join('%s=%s' % (a, b if type(b) != int else hex(b)) for (a, b) in params)
+    s += ',\n    '.join(
+        f'{a}={b if type(b) != int else hex(b)}' for (a, b) in params
+    )
+
     s += '\n)'
     return s
 
@@ -215,20 +219,37 @@ class Parser(object):
         direction = 'in' if address & 0x80 == 0x80 else 'out'
         number = address & 0x7f
         handler_name = 'handle_ep%d_%s_available' % (number, direction)
-        cs_endpoints_name = "endpoint_%s_cs_endpoints" % (number)
-        s = build_init('USBEndpoint', [
-            ("number", number),
-            ("direction", 'USBEndpoint.direction_' + direction),
-            ("transfer_type", self.endpoint_constant(self.transfer_types, attributes & 0x03)),
-            ("sync_type", self.endpoint_constant(self.sync_types, (attributes >> 2) & 0x03)),
-            ("usage_type", self.endpoint_constant(self.usage_types, (attributes >> 4) & 0x03)),
-            ("max_packet_size", max_packet_size),
-            ("interval", interval),
-            ("handler", handler_name),
-            ("cs_endpoints", cs_endpoints_name),
-            ('usb_class', 'usb_class'),
-            ('usb_vendor', 'usb_vendor'),
-        ])
+        cs_endpoints_name = f"endpoint_{number}_cs_endpoints"
+        s = build_init(
+            'USBEndpoint',
+            [
+                ("number", number),
+                ("direction", f'USBEndpoint.direction_{direction}'),
+                (
+                    "transfer_type",
+                    self.endpoint_constant(self.transfer_types, attributes & 0x03),
+                ),
+                (
+                    "sync_type",
+                    self.endpoint_constant(
+                        self.sync_types, (attributes >> 2) & 0x03
+                    ),
+                ),
+                (
+                    "usage_type",
+                    self.endpoint_constant(
+                        self.usage_types, (attributes >> 4) & 0x03
+                    ),
+                ),
+                ("max_packet_size", max_packet_size),
+                ("interval", interval),
+                ("handler", handler_name),
+                ("cs_endpoints", cs_endpoints_name),
+                ('usb_class', 'usb_class'),
+                ('usb_vendor', 'usb_vendor'),
+            ],
+        )
+
         node.list_names = {
             DescriptorType.cs_endpoint: cs_endpoints_name,
         }
@@ -252,8 +273,8 @@ class Parser(object):
         ) = struct.unpack('<BBBBBBBBB', desc)
         if bDescriptorType != DescriptorType.interface:
             raise Exception('This is not an interface descriptor!')
-        endpoints_name = 'interface_%s_endpoints' % (number)
-        cs_interfaces_name = 'interface_%s_cs_interfaces' % (number)
+        endpoints_name = f'interface_{number}_endpoints'
+        cs_interfaces_name = f'interface_{number}_cs_interfaces'
         s = build_init('USBInterface', [
             ('interface_number', number),
             ('interface_alternate', alternate),
@@ -285,7 +306,7 @@ class Parser(object):
         ) = struct.unpack('<BBHBBBBB', desc)
         if bDescriptorType != DescriptorType.configuration:
             raise Exception('This is not a configuration descriptor! %02x' % (bDescriptorType))
-        interfaces_name = "config_%s_interfaces" % (index)
+        interfaces_name = f"config_{index}_interfaces"
         s = build_init('USBConfiguration', [
             ('index', index),
             ('string', "strings_dict.get(%s, 'Config-%s')" % (string_index, string_index)),

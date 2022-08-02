@@ -77,27 +77,25 @@ class USBBaseActor(object):
         :return: the string, or None if id does not exist
         '''
         self.debug('Getting string by id %#x' % (str_id))
-        if str_id in self.str_dict:
-            return self.str_dict[str_id]
-        return None
+        return self.str_dict[str_id] if str_id in self.str_dict else None
 
     def verbose(self, msg, *args, **kwargs):
-        self.logger.verbose('[%s] %s' % (self.name, msg), *args, **kwargs)
+        self.logger.verbose(f'[{self.name}] {msg}', *args, **kwargs)
 
     def debug(self, msg, *args, **kwargs):
-        self.logger.debug('[%s] %s' % (self.name, msg), *args, **kwargs)
+        self.logger.debug(f'[{self.name}] {msg}', *args, **kwargs)
 
     def info(self, msg, *args, **kwargs):
-        self.logger.info('[%s] %s' % (self.name, msg), *args, **kwargs)
+        self.logger.info(f'[{self.name}] {msg}', *args, **kwargs)
 
     def warning(self, msg, *args, **kwargs):
-        self.logger.warning('[%s] %s' % (self.name, msg), *args, **kwargs)
+        self.logger.warning(f'[{self.name}] {msg}', *args, **kwargs)
 
     def error(self, msg, *args, **kwargs):
-        self.logger.error('[%s] %s' % (self.name, msg), *args, **kwargs)
+        self.logger.error(f'[{self.name}] {msg}', *args, **kwargs)
 
     def critical(self, msg, *args, **kwargs):
-        self.logger.critical('[%s] %s' % (self.name, msg), *args, **kwargs)
+        self.logger.critical(f'[{self.name}] {msg}', *args, **kwargs)
 
     def always(self, msg, *args, **kwargs):
-        self.logger.always('[%s] %s' % (self.name, msg), *args, **kwargs)
+        self.logger.always(f'[{self.name}] {msg}', *args, **kwargs)

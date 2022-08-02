@@ -110,7 +110,7 @@ You can use the disk image from umap2/data/fat32.3M.stick.img
 as a small disk image (extract it using `tar xvf fat32.3M.stick.img`)
 ----------------------------------------------------------------------
             ''' % (filename))
-            raise Exception('No file named %s found.' % (filename))
+            raise Exception(f'No file named {filename} found.')
 
     def close(self):
         self.image.flush()
@@ -135,8 +135,7 @@ as a small disk image (extract it using `tar xvf fat32.3M.stick.img`)
 
 
 def scsi_status(cbw, status):
-    csw = b'USBS' + cbw.tag + struct.pack('<IB', 0x00000000, status)
-    return csw
+    return b'USBS' + cbw.tag + struct.pack('<IB', 0x00000000, status)
 
 
 class ScsiDevice(USBBaseActor):
@@ -230,7 +229,7 @@ class ScsiDevice(USBBaseActor):
 
     @mutable('scsi_inquiry_response')
     def handle_inquiry(self, cbw):
-        self.debug('SCSI Inquiry, data: %s' % hexlify(cbw.cb[1:]))
+        self.debug(f'SCSI Inquiry, data: {hexlify(cbw.cb[1:])}')
         peripheral = 0x00  # SBC
         RMB = 0x80  # Removable
         version = 0x00
@@ -242,12 +241,11 @@ class ScsiDevice(USBBaseActor):
         part1 = struct.pack('BBBB', peripheral, RMB, version, response_data_format)
         part2 = struct.pack('BBB', *config) + vendor_id + product_id + product_revision_level
         length = struct.pack('B', len(part2))
-        response = part1 + length + part2
-        return response
+        return part1 + length + part2
 
     @mutable('scsi_request_sense_response')
     def handle_request_sense(self, cbw):
-        self.debug('SCSI Request Sense, data: %s' % hexlify(cbw.cb[1:]))
+        self.debug(f'SCSI Request Sense, data: {hexlify(cbw.cb[1:])}')
         response_code = 0x70
         valid = 0x00
         filemark = 0x06
@@ -268,8 +266,7 @@ class ScsiDevice(USBBaseActor):
         )
         part2 += sense_key_specific
         length = struct.pack('B', len(part2))
-        response = part1 + length + part2
-        return response
+        return part1 + length + part2
 
     @mutable('scsi_test_unit_ready_response')
     def handle_test_unit_ready(self, cbw):
@@ -278,20 +275,18 @@ class ScsiDevice(USBBaseActor):
     @mutable('scsi_read_capacity_10_response')
     def handle_read_capacity_10(self, cbw):
         # .. todo: is the length correct?
-        self.debug('SCSI Read Capacity(10), data: %s' % hexlify(cbw.cb[1:]))
+        self.debug(f'SCSI Read Capacity(10), data: {hexlify(cbw.cb[1:])}')
         lastlba = self.disk_image.get_sector_count()
         length = self.disk_image.block_size
-        response = struct.pack('>II', lastlba, length)
-        return response
+        return struct.pack('>II', lastlba, length)
 
     @mutable('scsi_read_capacity_16_response')
     def handle_read_capacity_16(self, cbw):
         # .. todo: is the length correct?
-        self.debug('SCSI Read Capacity(16), data: %s' % hexlify(cbw.cb[1:]))
+        self.debug(f'SCSI Read Capacity(16), data: {hexlify(cbw.cb[1:])}')
         lastlba = self.disk_image.get_sector_count()
         length = self.disk_image.block_size
-        response = struct.pack('>BBQIBB', 0x9e, 0x10, lastlba, length, 0x00, 0x00)
-        return response
+        return struct.pack('>BBQIBB', 0x9e, 0x10, lastlba, length, 0x00, 0x00)
 
     @mutable('scsi_send_diagnostic_response')
     def handle_send_diagnostic(self, cbw):
@@ -303,7 +298,7 @@ class ScsiDevice(USBBaseActor):
 
     @mutable('scsi_write_10_response')
     def handle_write_10(self, cbw):
-        self.debug('SCSI Write (10), data: %s' % hexlify(cbw.cb[1:]))
+        self.debug(f'SCSI Write (10), data: {hexlify(cbw.cb[1:])}')
 
         base_lba = struct.unpack('>I', cbw.cb[2:6])[0]
         num_blocks = struct.unpack('>H', cbw.cb[7:9])[0]
@@ -361,11 +356,11 @@ class ScsiDevice(USBBaseActor):
         return total_len + header_data
 
     def _build_page_report(self, page, subpage, data):
-        if subpage is None:
-            report = self._build_page0_report(page, data)
-        else:
-            report = self._build_subpage_report(page, subpage, data)
-        return report
+        return (
+            self._build_page0_report(page, data)
+            if subpage is None
+            else self._build_subpage_report(page, subpage, data)
+        )
 
     def handle_scsi_mode_sense(self, mode_type, page, subpage, alloc_len, ctrl, with_header=True):
         # .. todo: implement response for unsupported pages
@@ -430,7 +425,7 @@ class ScsiDevice(USBBaseActor):
 class CommandBlockWrapper:
     def __init__(self, bytestring):
         as_array = bytearray(bytestring)
-        self.signature = bytestring[0:4]
+        self.signature = bytestring[:4]
         self.tag = bytestring[4:8]
         self.data_transfer_length = struct.unpack('<I', bytestring[8:12])[0]
         self.flags = as_array[12]

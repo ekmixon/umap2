@@ -56,10 +56,7 @@ def get_stages(stage_file):
     '''
     with open(stage_file, 'r') as f:
         stages = [l.rstrip() for l in f.readlines()]
-    stage_count = {}
-    for stage in stages:
-        stage_count[stage] = stages.count(stage)
-    return stage_count
+    return {stage: stages.count(stage) for stage in stages}
 
 
 def add_stage(g, stage, template, count):
@@ -84,19 +81,16 @@ def add_stage(g, stage, template, count):
             p1 -> p2 -> p3 -> x
     '''
     g.connect(template)
-    pseudos = [
+    if pseudos := [
         # workaround for a PseudoTemplate bug in kitty 0.6.9
         # TODO: move to PseudoTemplate in next kitty version
         Template(
             name=stage,
-            fields=Meta(fields=[
-                String(value=stage),
-                UInt32(value=i)
-            ]),
-            fuzzable=False
-        ) for i in range(count - 1)
-    ]
-    if pseudos:
+            fields=Meta(fields=[String(value=stage), UInt32(value=i)]),
+            fuzzable=False,
+        )
+        for i in range(count - 1)
+    ]:
         g.connect(pseudos[0])
         for i in range(len(pseudos) - 1):
             g.connect(pseudos[i], pseudos[i + 1])
@@ -114,7 +108,7 @@ def get_model(options):
     stage_file = options['--stage-file']
     stages = get_stages(stage_file)
     templates = {}
-    templates.update(enumerate_templates(audio))
+    templates |= enumerate_templates(audio)
     templates.update(enumerate_templates(cdc))
     templates.update(enumerate_templates(enum))
     templates.update(enumerate_templates(generic))
@@ -122,7 +116,7 @@ def get_model(options):
     templates.update(enumerate_templates(hub))
     templates.update(enumerate_templates(mass_storage))
     templates.update(enumerate_templates(smart_card))
-    g = GraphModel('usb model (%s)' % (stage_file))
+    g = GraphModel(f'usb model ({stage_file})')
     for stage in stages:
         if stage in templates:
             stage_template = templates[stage]
@@ -160,7 +154,7 @@ def get_fuzzer(options=None):
         '--count': '2',
         '--disconnect-delays': '0.0,0.0'
     }
-    local_options.update(options)
+    local_options |= options
     fuzzer = ClientFuzzer(name='Umap2', option_line=local_options['--kitty-options'])
     fuzzer.set_interface(WebInterface())
 

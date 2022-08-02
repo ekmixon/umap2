@@ -19,7 +19,7 @@ class Facedancer(object):
 
     def reset(self, count=10):
         self.logger.info('Facedancer resetting...')
-        for i in range(count):
+        for _ in range(count):
             self.halt()
             self.serialport.setDTR(0)
             rsp_data = self.read(1024)
@@ -35,8 +35,11 @@ class Facedancer(object):
     def read(self, n):
         '''Read raw bytes.'''
         b = self.serialport.read(n)
-        self.logger.verbose('Facedancer received %s bytes; %s bytes remaining' % (len(b), self.serialport.inWaiting()))
-        self.logger.verbose('Facedancer Rx: %s' % hexlify(b))
+        self.logger.verbose(
+            f'Facedancer received {len(b)} bytes; {self.serialport.inWaiting()} bytes remaining'
+        )
+
+        self.logger.verbose(f'Facedancer Rx: {hexlify(b)}')
         return b
 
     def readcmd(self):
@@ -45,26 +48,22 @@ class Facedancer(object):
         b = self.read(4)
         app, verb, n = struct.unpack('<BBH', b)
 
-        if n > 0:
-            data = self.read(n)
-        else:
-            data = b''
-
+        data = self.read(n) if n > 0 else b''
         if len(data) != n:
             raise ValueError('Facedancer expected %d bytes but received only %d' % (n, len(data)))
         cmd = FacedancerCommand(app, verb, data)
-        self.logger.verbose('Facedancer Rx command: %s' % cmd)
+        self.logger.verbose(f'Facedancer Rx command: {cmd}')
         return cmd
 
     def write(self, b):
         '''Write raw bytes.'''
-        self.logger.verbose('Facedancer Tx: %s' % hexlify(b))
+        self.logger.verbose(f'Facedancer Tx: {hexlify(b)}')
         self.serialport.write(b)
 
     def writecmd(self, c):
         '''Write a single command.'''
         self.write(c.as_bytestring())
-        self.logger.verbose('Facedancer Tx command: %s' % c)
+        self.logger.verbose(f'Facedancer Tx command: {c}')
 
 
 class FacedancerCommand(object):
@@ -77,7 +76,7 @@ class FacedancerCommand(object):
         s = 'app 0x%02x, verb 0x%02x, len %d' % (self.app, self.verb, len(self.data))
 
         if len(self.data) > 0:
-            s += ', data %s' % hexlify(self.data)
+            s += f', data {hexlify(self.data)}'
 
         return s
 
@@ -93,5 +92,4 @@ class FacedancerCommand(object):
         return s
 
     def as_bytestring(self):
-        b = struct.pack('<BBH', self.app, self.verb, len(self.data)) + self.data
-        return b
+        return struct.pack('<BBH', self.app, self.verb, len(self.data)) + self.data

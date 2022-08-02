@@ -117,7 +117,7 @@ class BaseDeviceTests(object):
         self.logger = get_test_logger()
         self.events = EventHandler()
         self.app = TestApp(event_handler=self.events)
-        self.logger.info('Starting test: %s' % self._testMethodName)
+        self.logger.info(f'Starting test: {self._testMethodName}')
         self.phy = self.app.load_phy('test')
         self.device = self.app.load_device(self.__dev_name__, self.phy)
 

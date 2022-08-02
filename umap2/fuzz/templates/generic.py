@@ -8,9 +8,7 @@ from kitty.model import ENC_STR_DEFAULT
 
 
 def _join_name(prefix, postfix):
-    if prefix is None:
-        return None
-    return '%s_%s' % (prefix, postfix)
+    return None if prefix is None else f'{prefix}_{postfix}'
 
 
 class DynamicExtended(OneOf):
@@ -120,5 +118,11 @@ class SizedPt(Container):
         '''
         if isinstance(fields, BaseField):
             fields = [fields]
-        fields.insert(0, SizeInBytes(name='%s size' % name, sized_field=self, length=8, fuzzable=True))
+        fields.insert(
+            0,
+            SizeInBytes(
+                name=f'{name} size', sized_field=self, length=8, fuzzable=True
+            ),
+        )
+
         super(SizedPt, self).__init__(name=name, fields=fields)

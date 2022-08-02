@@ -30,5 +30,4 @@ class Raspdancer:
             data = [ord(x) for x in data]
         data = tuple(data)
         data = spi.transfer(data)
-        dataout = "".join([chr(x) for x in data])
-        return dataout
+        return "".join([chr(x) for x in data])

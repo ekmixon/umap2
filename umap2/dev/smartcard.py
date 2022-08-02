@@ -38,17 +38,20 @@ class USBSmartcardClass(USBClass):
 
     @mutable('get_clock_frequencies_response')
     def handle_get_clock_frequencies(self, req):
-        response = ''
-        for frequency in self.interface.clock_frequencies:
-            response += struct.pack('<I', frequency)
+        response = ''.join(
+            struct.pack('<I', frequency)
+            for frequency in self.interface.clock_frequencies
+        )
+
         response = struct.pack('<I', len(response)) + response
         return response
 
     @mutable('get_data_rates_response')
     def handle_get_data_rates(self, req):
-        response = ''
-        for data_rate in self.interface.data_rates:
-            response += struct.pack('<I', data_rate)
+        response = ''.join(
+            struct.pack('<I', data_rate) for data_rate in self.interface.data_rates
+        )
+
         response = struct.pack('<I', len(response)) + response
         return response
 
@@ -68,8 +71,16 @@ def R2P_DataBlock(slot, seq, status, error, chain_param, data):
 
 
 def R2P_SlotStatus(slot, seq, status, error, clock_status):
-    response = struct.pack('<BIBBBBB', RdrToPc.SlotStatus, 0, slot, seq, status, error, clock_status)
-    return response
+    return struct.pack(
+        '<BIBBBBB',
+        RdrToPc.SlotStatus,
+        0,
+        slot,
+        seq,
+        status,
+        error,
+        clock_status,
+    )
 
 
 def R2P_Escape(slot, seq, status, error, data):
@@ -134,7 +145,7 @@ class USBSmartcardInterface(USBInterface):
         self.data_rates = []
 
         self.clock_freq = self.clock_frequencies[0]
-        self.data_rate = 0 if not self.data_rates else self.data_rates[0]
+        self.data_rate = self.data_rates[0] if self.data_rates else 0
 
         endpoints = [
             # CCID command pipe
@@ -466,7 +477,7 @@ class USBSmartcardInterface(USBInterface):
     def handle_buffer_available(self):
         if not self.int_q.empty():
             buff = self.int_q.get()
-            self.debug('Sending data to host: %s' % (hexlify(buff)))
+            self.debug(f'Sending data to host: {hexlify(buff)}')
             self.send_on_endpoint(3, buff)
         else:
             self.send_on_endpoint(3, b'')

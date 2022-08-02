@@ -70,7 +70,7 @@ class USBDevice(USBBaseActor):
             DescriptorType.device_qualifier: self.get_device_qualifier_descriptor,
             DescriptorType.bos: self.get_bos_descriptor,
         }
-        self.descriptors.update(descriptors)
+        self.descriptors |= descriptors
 
         self.config_num = -1
         self.configuration = None
@@ -151,7 +151,7 @@ class USBDevice(USBBaseActor):
         bLength = 18
         bDescriptorType = 1
         bMaxPacketSize0 = self.max_packet_size_ep0
-        d = struct.pack(
+        return struct.pack(
             '<BBHBBBBHHHBBBB',
             bLength,
             bDescriptorType,
@@ -166,9 +166,8 @@ class USBDevice(USBBaseActor):
             self.manufacturer_string_id,
             self.product_string_id,
             self.serial_number_string_id,
-            len(self.configurations)
+            len(self.configurations),
         )
-        return d
 
     # IRQ handlers
     #####################################################
@@ -195,7 +194,7 @@ class USBDevice(USBBaseActor):
 
     def handle_request(self, buf):
         req = USBDeviceRequest(buf)
-        self.debug('Received request: %s' % req)
+        self.debug(f'Received request: {req}')
 
         # figure out the intended recipient
         req_type = req.get_type()
@@ -234,14 +233,17 @@ class USBDevice(USBBaseActor):
         # if handler_entity == 9:  # HACK: for hub class
         #     handler_entity = recipient
 
-        self.debug('req: %s' % req)
+        self.debug(f'req: {req}')
         handler = handler_entity.request_handlers.get(req.request, handler_entity.default_handler)
 
         if not handler:
-            self.error('request not handled: %s' % req)
-            self.error('handler entity type: %s' % (type(handler_entity)))
-            self.error('handler entity: %s' % (handler_entity))
-            self.error('handler_entity.request_handlers: %s' % (handler_entity.request_handlers))
+            self.error(f'request not handled: {req}')
+            self.error(f'handler entity type: {type(handler_entity)}')
+            self.error(f'handler entity: {handler_entity}')
+            self.error(
+                f'handler_entity.request_handlers: {handler_entity.request_handlers}'
+            )
+
             for k in sorted(handler_entity.request_handlers.keys()):
                 self.error('0x%02x: %s' % (k, handler_entity.request_handlers[k]))
             self.error('invalid handler, stalling')
@@ -257,7 +259,9 @@ class USBDevice(USBBaseActor):
         Called when there is no handler for the request
         """
         self.phy.send_on_endpoint(0, b'')
-        self.debug('Received an unknown device request: %s, returned an empty response' % req)
+        self.debug(
+            f'Received an unknown device request: {req}, returned an empty response'
+        )
 
     def handle_data_available(self, ep_num, data):
         if self.state == State.configured and ep_num in self.endpoints:
@@ -345,21 +349,17 @@ class USBDevice(USBBaseActor):
             return self.configurations[0].get_other_speed_descriptor()
 
     def get_bos_descriptor(self, num):
-        if self.bos:
-            return self.bos.get_descriptor()
-        # no bos? stall ep
-        return None
+        return self.bos.get_descriptor() if self.bos else None
 
     @mutable('string_descriptor_zero')
     def get_string0_descriptor(self):
-        d = struct.pack(
+        return struct.pack(
             '<BBBB',
-            4,      # length of descriptor in bytes
-            3,      # descriptor type 3 == string
-            9,      # language code 0, byte 0
-            4       # language code 0, byte 1
+            4,  # length of descriptor in bytes
+            3,  # descriptor type 3 == string
+            9,  # language code 0, byte 0
+            4,  # language code 0, byte 1
         )
-        return d
 
     @mutable('string_descriptor')
     def get_string_descriptor(self, num):
@@ -367,9 +367,8 @@ class USBDevice(USBBaseActor):
         s = None
         if num <= len(self.strings):
             s = self.strings[num - 1].encode('utf-16')
-        else:
-            if self.configuration:
-                s = self.configuration.get_string_by_id(num)
+        elif self.configuration:
+            s = self.configuration.get_string_by_id(num)
         if not s:
             s = self.strings[0].encode('utf-16')
         # Linux doesn't like the leading 2-byte Byte Order Mark (BOM);
@@ -400,19 +399,17 @@ class USBDevice(USBBaseActor):
         DeviceRemovable = 0
         PortPwrCtrlMask = 0xff
 
-        hub_descriptor = struct.pack(
+        return struct.pack(
             '<BBBHBBBB',
-            bLength,              # length of descriptor in bytes
-            bDescriptorType,      # descriptor type 0x29 == hub
-            bNbrPorts,            # number of physical ports
+            bLength,  # length of descriptor in bytes
+            bDescriptorType,  # descriptor type 0x29 == hub
+            bNbrPorts,  # number of physical ports
             wHubCharacteristics,  # hub characteristics
-            bPwrOn2PwrGood,       # time from power on til power good
-            bHubContrCurrent,     # max current required by hub controller
+            bPwrOn2PwrGood,  # time from power on til power good
+            bHubContrCurrent,  # max current required by hub controller
             DeviceRemovable,
-            PortPwrCtrlMask
+            PortPwrCtrlMask,
         )
-
-        return hub_descriptor
 
     # USB 2.0 specification, section 9.4.8 (p 285 of pdf)
     def handle_set_descriptor_request(self, req):
@@ -504,23 +501,27 @@ class USBDeviceRequest(object):
         self.raw_bytes = raw_bytes
 
     def __str__(self):
-        s = 'dir=%#x (%s), type=%#x (%s), rec=%#x (%s), req=%#x, val=%#x, idx=%#x, len=%#x' % (
-            self.get_direction(),
-            'in' if self.get_direction() else 'out',
-            self.get_type(),
-            self.setup_request_types.get(self.get_type(), 'unknown'),
-            self.get_recipient(),
-            self.setup_request_receipients.get(self.get_recipient(), 'unknown'),
-            self.request,
-            self.value,
-            self.get_index(),
-            self.length
+        return (
+            'dir=%#x (%s), type=%#x (%s), rec=%#x (%s), req=%#x, val=%#x, idx=%#x, len=%#x'
+            % (
+                self.get_direction(),
+                'in' if self.get_direction() else 'out',
+                self.get_type(),
+                self.setup_request_types.get(self.get_type(), 'unknown'),
+                self.get_recipient(),
+                self.setup_request_receipients.get(
+                    self.get_recipient(), 'unknown'
+                ),
+                self.request,
+                self.value,
+                self.get_index(),
+                self.length,
+            )
         )
-        return s
 
     def raw(self):
         '''returns request as bytes'''
-        b = struct.pack(
+        return struct.pack(
             '<BBHHH',
             self.request_type,
             self.request,
@@ -528,7 +529,6 @@ class USBDeviceRequest(object):
             self.index >> 8,
             self.length >> 8,
         )
-        return b
 
     def get_direction(self):
         return (self.request_type >> 7) & 0x01
@@ -543,9 +543,4 @@ class USBDeviceRequest(object):
     # interface or an endpoint (see USB 2.0 spec section 9.3.4)
     def get_index(self):
         rec = self.get_recipient()
-        if rec == 1:                # interface
-            return self.index
-        elif rec == 2:              # endpoint
-            return self.index & 0xf
-        else:
-            return self.index
+        return self.index & 0xf if rec == 2 else self.index

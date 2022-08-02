@@ -95,7 +95,9 @@ class USBInterface(USBBaseActor):
 
     def default_handler(self, req):
         self.phy.send_on_endpoint(0, b'')
-        self.debug('Received an unknown USBInterface request: %s, returned an empty response' % req)
+        self.debug(
+            f'Received an unknown USBInterface request: {req}, returned an empty response'
+        )
 
     # Table 9-12 of USB 2.0 spec (pdf page 296)
     @mutable('interface_descriptor')
@@ -119,8 +121,7 @@ class USBInterface(USBBaseActor):
         )
 
         if self.iclass:
-            iclass_desc_num = interface_class_to_descriptor_type(self.iclass)
-            if iclass_desc_num:
+            if iclass_desc_num := interface_class_to_descriptor_type(self.iclass):
                 desc = self.descriptors[iclass_desc_num]
                 if callable(desc):
                     desc = desc()

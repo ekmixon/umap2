@@ -189,9 +189,7 @@ class USBCDCClass(USBClass):
     def handle_getter(self, req):
         param_id = self.get_param_id_from_request(req.request)
         key = (param_id, req.value, req.index)
-        if key in self.params:
-            return self.params[key]
-        return '\x00' * req.length
+        return self.params[key] if key in self.params else '\x00' * req.length
 
     def handle_clear(self, req):
         param_id = self.get_param_id_from_request(req.request)
@@ -204,9 +202,7 @@ class USBCDCClass(USBClass):
         return b''
 
     def get_param_id_from_request(self, request):
-        if request in self.param_info:
-            return self.param_info[request][0]
-        return request
+        return self.param_info[request][0] if request in self.param_info else request
 
 
 class CommunicationClassSubclassCodes:
@@ -322,10 +318,10 @@ class FunctionalDescriptor(USBCSInterface):
 
     @classmethod
     def get_subtype_name(cls, subtype):
-        for vn in dir(cls):
-            if getattr(cls, vn) == subtype:
-                return vn
-        return 'FunctionalDescriptor-%02x' % subtype
+        return next(
+            (vn for vn in dir(cls) if getattr(cls, vn) == subtype),
+            'FunctionalDescriptor-%02x' % subtype,
+        )
 
 
 def build_notification(req_type, notification_code, value, index, data=None):

@@ -69,11 +69,10 @@ class NameGen(object):
         base_name += '[%d]' % args
         if base_name not in self.names:
             self.names[base_name] = 0
-            cur_name = base_name
+            return base_name
         else:
             self.names[base_name] += 1
-            cur_name = '%s <%d>' % (base_name, self.names[base_name])
-        return cur_name
+            return '%s <%d>' % (base_name, self.names[base_name])
 
 
 class RandomHidReport(TakeFrom):
@@ -89,7 +88,7 @@ class RandomHidReport(TakeFrom):
             for i in range(4):
                 opcode = tag | i
                 current = chr(opcode)
-                for j in range(i):
+                for _ in range(i):
                     current += chr(r.randint(0, 255))
                 fields.append(Static(name=namer.gen(opcode), value=current))
         super(RandomHidReport, self).__init__(

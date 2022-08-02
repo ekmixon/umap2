@@ -77,10 +77,9 @@ class Umap2FuzzApp(Umap2EmulationApp):
         return False
 
     def _should_reconnect(self):
-        if self.fuzzer:
-            if os.path.isfile('/tmp/umap_kitty/trigger_reconnect'):
-                return True
-        return False
+        return bool(
+            self.fuzzer and os.path.isfile('/tmp/umap_kitty/trigger_reconnect')
+        )
 
     def _clear_reconnect_trigger(self):
         trigger = '/tmp/umap_kitty/trigger_reconnect'
@@ -88,10 +87,9 @@ class Umap2FuzzApp(Umap2EmulationApp):
             os.remove(trigger)
 
     def _should_disconnect(self):
-        if self.fuzzer:
-            if os.path.isfile('/tmp/umap_kitty/trigger_disconnect'):
-                return True
-        return False
+        return bool(
+            self.fuzzer and os.path.isfile('/tmp/umap_kitty/trigger_disconnect')
+        )
 
     def _clear_disconnect_trigger(self):
         trigger = '/tmp/umap_kitty/trigger_disconnect'

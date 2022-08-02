@@ -38,7 +38,7 @@ class PhyInterface(object):
         :return: the disconnected device (if was connected)
         '''
         if self.connected_device:
-            self.info('Disconnected device %s' % self.connected_device.name)
+            self.info(f'Disconnected device {self.connected_device.name}')
         else:
             self.info('Disconnect called when already disconnected')
         dev = self.connected_device
@@ -70,22 +70,22 @@ class PhyInterface(object):
         raise NotImplementedError('should be implemented in subclass')
 
     def verbose(self, msg, *args, **kwargs):
-        self.logger.verbose('[%s] %s' % (self.name, msg), *args, **kwargs)
+        self.logger.verbose(f'[{self.name}] {msg}', *args, **kwargs)
 
     def debug(self, msg, *args, **kwargs):
-        self.logger.debug('[%s] %s' % (self.name, msg), *args, **kwargs)
+        self.logger.debug(f'[{self.name}] {msg}', *args, **kwargs)
 
     def info(self, msg, *args, **kwargs):
-        self.logger.info('[%s] %s' % (self.name, msg), *args, **kwargs)
+        self.logger.info(f'[{self.name}] {msg}', *args, **kwargs)
 
     def warning(self, msg, *args, **kwargs):
-        self.logger.warning('[%s] %s' % (self.name, msg), *args, **kwargs)
+        self.logger.warning(f'[{self.name}] {msg}', *args, **kwargs)
 
     def error(self, msg, *args, **kwargs):
-        self.logger.error('[%s] %s' % (self.name, msg), *args, **kwargs)
+        self.logger.error(f'[{self.name}] {msg}', *args, **kwargs)
 
     def critical(self, msg, *args, **kwargs):
-        self.logger.critical('[%s] %s' % (self.name, msg), *args, **kwargs)
+        self.logger.critical(f'[{self.name}] {msg}', *args, **kwargs)
 
     def always(self, msg, *args, **kwargs):
-        self.logger.always('[%s] %s' % (self.name, msg), *args, **kwargs)
+        self.logger.always(f'[{self.name}] {msg}', *args, **kwargs)

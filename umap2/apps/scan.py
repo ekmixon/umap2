@@ -42,7 +42,7 @@ class Umap2ScanApp(Umap2App):
         phy = self.load_phy(self.options['--phy'])
         supported = []
         for device_name in self.umap_classes:
-            self.logger.always('Testing support: %s' % (device_name))
+            self.logger.always(f'Testing support: {device_name}')
             try:
                 self.start_time = time.time()
                 device = self.load_device(device_name, phy)
@@ -59,7 +59,7 @@ class Umap2ScanApp(Umap2App):
             time.sleep(2)
         if len(supported):
             self.logger.always('---------------------------------')
-            self.logger.always('Found %s supported device(s):' % (len(supported)))
+            self.logger.always(f'Found {len(supported)} supported device(s):')
             for i, device_name in enumerate(supported):
                 self.logger.always('%d. %s' % (i + 1, device_name))
 

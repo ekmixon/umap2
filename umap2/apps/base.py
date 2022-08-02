@@ -16,10 +16,7 @@ from umap2.utils.ulogger import set_default_handler_level
 class Umap2App(object):
 
     def __init__(self, docstring=None):
-        if docstring is not None:
-            self.options = docopt.docopt(docstring)
-        else:
-            self.options = {}
+        self.options = docopt.docopt(docstring) if docstring is not None else {}
         self.umap_class_dict = {
             'audio': ('audio', 'Headset'),
             'billboard': ('billboard', 'A billboard, requires USB 2.1 and higher'),
@@ -57,7 +54,7 @@ class Umap2App(object):
         return logger
 
     def load_phy(self, phy_string):
-        self.logger.info('Loading physical interface: %s' % phy_string)
+        self.logger.info(f'Loading physical interface: {phy_string}')
         phy_arr = phy_string.split(':')
         phy_type = phy_arr[0]
         if phy_type == 'fd':
@@ -79,15 +76,15 @@ class Umap2App(object):
             self.logger.debug('Physical interface is GadgetFs')
             phy = GadgetFsPhy(self)
             return phy
-        raise Exception('Phy type not supported: %s' % phy_type)
+        raise Exception(f'Phy type not supported: {phy_type}')
 
     def load_device(self, dev_name, phy):
         if dev_name in self.umap_classes:
-            self.logger.info('Loading USB device %s' % dev_name)
+            self.logger.info(f'Loading USB device {dev_name}')
             module_name = self.umap_class_dict[dev_name][0]
-            module = importlib.import_module('umap2.dev.%s' % module_name)
+            module = importlib.import_module(f'umap2.dev.{module_name}')
         else:
-            self.logger.info('Loading custom USB device from file: %s' % dev_name)
+            self.logger.info(f'Loading custom USB device from file: {dev_name}')
             dirpath, filename = os.path.split(dev_name)
             modulename = filename[:-3]
             if dirpath in sys.path:
@@ -96,8 +93,7 @@ class Umap2App(object):
             module = __import__(modulename, globals(), locals(), [], -1)
         usb_device = module.usb_device
         kwargs = self.get_user_device_kwargs()
-        dev = usb_device(self, phy, **kwargs)
-        return dev
+        return usb_device(self, phy, **kwargs)
 
     def get_user_device_kwargs(self):
         '''

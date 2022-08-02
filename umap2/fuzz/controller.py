@@ -28,9 +28,10 @@ class UmapController(ClientController):
             os.remove(path)
 
     def cleanup_triggers(self):
-        if not os.path.isdir(self.trigger_dir):
-            if not os.path.exists(self.trigger_dir):
-                os.mkdir(self.trigger_dir)
+        if not os.path.isdir(self.trigger_dir) and not os.path.exists(
+            self.trigger_dir
+        ):
+            os.mkdir(self.trigger_dir)
         self.del_file(self.connect_file)
         self.del_file(self.disconnect_file)
         self.del_file(self.heartbeat_file)
@@ -60,7 +61,7 @@ class UmapController(ClientController):
             time.sleep(0.01)
             count += 1
             if count % 1000 == 0:
-                self.logger.warning('still waiting for umap_stack to remove the file %s' % path)
+                self.logger.warning(f'still waiting for umap_stack to remove the file {path}')
 
     def get_last_heartbeat(self):
         '''
@@ -69,9 +70,11 @@ class UmapController(ClientController):
         If no responses have ever been received from the victim, returns 0.
         '''
         heartbeat_file = os.path.join(self.trigger_dir, self.heartbeat_file)
-        if not os.path.exists(heartbeat_file):
-            return 0
-        return os.path.getmtime(heartbeat_file)
+        return (
+            os.path.getmtime(heartbeat_file)
+            if os.path.exists(heartbeat_file)
+            else 0
+        )
 
     def pre_test(self, test_number):
         self.trigger_disconnect()

@@ -32,7 +32,9 @@ class USBCSEndpoint(USBBaseActor):
 
     def default_handler(self, req):
         self.interface.phy.send_on_endpoint(0, b'')
-        self.debug('Received an unknown CSEndpoint request: %s, returned an empty response' % req)
+        self.debug(
+            f'Received an unknown CSEndpoint request: {req}, returned an empty response'
+        )
 
     def set_interface(self, interface):
         self.interface = interface
@@ -42,5 +44,4 @@ class USBCSEndpoint(USBBaseActor):
     def get_descriptor(self, usb_type='fullspeed', valid=False):
         descriptor_type = DescriptorType.cs_endpoint
         length = len(self.cs_config) + 2
-        response = struct.pack('BB', length & 0xff, descriptor_type) + self.cs_config
-        return response
+        return struct.pack('BB', length & 0xff, descriptor_type) + self.cs_config

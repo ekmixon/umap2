@@ -20,7 +20,7 @@ class USBVendorSpecificVendor(USBVendor):
         }
 
     def handle_generic(self, req):
-        self.always('Generic handler - req: %s' % req)
+        self.always(f'Generic handler - req: {req}')
 
 
 class USBVendorSpecificClass(USBClass):
@@ -32,7 +32,7 @@ class USBVendorSpecificClass(USBClass):
         }
 
     def handle_generic(self, req):
-        self.always('Generic handler - req: %s' % req)
+        self.always(f'Generic handler - req: {req}')
 
 
 class USBVendorSpecificInterface(USBInterface):
@@ -91,8 +91,7 @@ class USBVendorSpecificInterface(USBInterface):
         )
 
         if self.iclass:
-            iclass_desc_num = interface_class_to_descriptor_type(self.iclass)
-            if iclass_desc_num:
+            if iclass_desc_num := interface_class_to_descriptor_type(self.iclass):
                 desc = self.descriptors[iclass_desc_num]
                 if callable(desc):
                     desc = desc()
@@ -112,7 +111,7 @@ class USBVendorSpecificInterface(USBInterface):
         }
 
     def handle_generic(self, req):
-        self.always('Generic handler - req: %s' % req)
+        self.always(f'Generic handler - req: {req}')
 
 
 class USBVendorSpecificDevice(USBDevice):
@@ -156,11 +155,13 @@ class USBVendorSpecificDevice(USBDevice):
         req_type = req.get_type()
         recipient_type = req.get_recipient()
 
-        if req_type == Request.type_standard:    # for standard requests we lookup the recipient by index
-            if recipient_type == Request.recipient_endpoint:
-                self.usb_function_supported()
-                #self.phy.stall_ep0()
-                return
+        if (
+            req_type == Request.type_standard
+            and recipient_type == Request.recipient_endpoint
+        ):
+            self.usb_function_supported()
+            #self.phy.stall_ep0()
+            return
 
         return super(USBVendorSpecificDevice, self).handle_request(buf)
 

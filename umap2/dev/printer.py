@@ -34,11 +34,9 @@ class USBPrinterClass(USBClass):
             'MEM': 'MEM=55MB',
             'COMMENT': 'RES=600x8',
         }
-        device_id = ';'.join(k + ':' + v for k, v in device_id_dict.items())
-        device_id += ';'
+        device_id = ';'.join(f'{k}:{v}' for k, v in device_id_dict.items()) + ';'
         length = struct.pack('>H', len(device_id))
-        response = length + str.encode(device_id)
-        return response
+        return length + str.encode(device_id)
 
 
 class USBPrinterInterface(USBInterface):
@@ -124,7 +122,7 @@ class USBPrinterInterface(USBInterface):
     @mutable('handle_data_available')
     def handle_data_available(self, data):
         if not self.writing:
-            self.info('Writing PCL file: %s' % self.filename)
+            self.info(f'Writing PCL file: {self.filename}')
 
         with open(self.filename, 'ab') as out_file:
             self.writing = True

@@ -35,8 +35,7 @@ class USBKeyboardClass(USBClass):
 
     @mutable('hid_get_report_response')
     def handle_get_report(self, req):
-        response = b'\xff' * req.length
-        return response
+        return b'\xff' * req.length
 
     @mutable('hid_get_idle_response')
     def handle_get_idle(self, req):
@@ -141,31 +140,30 @@ class USBKeyboardInterface(USBInterface):
         input_data_array_absolute_bitfield = b'\x81\x00'
         end_collection = b'\xc0'
 
-        report_descriptor = (
-            usage_page_generic_desktop_controls +
-            usage_keyboard +
-            collection_application +
-            usage_page_keyboard +
-            usage_minimum1 +
-            usage_maximum1 +
-            logical_minimum1 +
-            logical_maximum1 +
-            report_size1 +
-            report_count1 +
-            input_data_variable_absolute_bitfield +
-            report_count2 +
-            report_size2 +
-            input_constant_array_absolute_bitfield +
-            usage_minimum2 +
-            usage_maximum2 +
-            logical_minimum2 +
-            logical_maximum2 +
-            report_size3 +
-            report_count3 +
-            input_data_array_absolute_bitfield +
-            end_collection
+        return (
+            usage_page_generic_desktop_controls
+            + usage_keyboard
+            + collection_application
+            + usage_page_keyboard
+            + usage_minimum1
+            + usage_maximum1
+            + logical_minimum1
+            + logical_maximum1
+            + report_size1
+            + report_count1
+            + input_data_variable_absolute_bitfield
+            + report_count2
+            + report_size2
+            + input_constant_array_absolute_bitfield
+            + usage_minimum2
+            + usage_maximum2
+            + logical_minimum2
+            + logical_maximum2
+            + report_size3
+            + report_count3
+            + input_data_array_absolute_bitfield
+            + end_collection
         )
-        return report_descriptor
 
     def handle_buffer_available(self):
         #
@@ -178,10 +176,7 @@ class USBKeyboardInterface(USBInterface):
             self.first_call = time.time()
         if time.time() - self.first_call > 2:
             self.usb_function_supported('buffer available for keyboard report')
-            if self.keys:
-                letter = self.keys.pop(0)
-            else:
-                letter = '\x00'
+            letter = self.keys.pop(0) if self.keys else '\x00'
             self.type_letter(letter)
 
     def type_letter(self, letter, modifiers=0):

@@ -118,8 +118,7 @@ class USBMtpInterface(USBInterface):
         self.add_string_with_id(0xee, 'MSFT100'.encode('utf-16') + b'\x00\x00')
 
     def handle_ep1_data_available(self, data):
-        resps = self.api.handle_payload(data)
-        if resps:
+        if resps := self.api.handle_payload(data):
             for resp in resps:
                 self.send_on_endpoint(2, resp)
 

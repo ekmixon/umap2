@@ -77,12 +77,12 @@ class Max342xPhy(PhyInterface):
         self.retries = False
         self.enable()
         rev = self.read_register(Regs.revision)
-        self.info('MAX F/W revision: %s' % rev)
+        self.info(f'MAX F/W revision: {rev}')
         # first, we need to read
         self.write_register(Regs.pin_control, self.full_duplex | self.interrupt_level)
 
     def enable(self):
-        for i in range(3):
+        for _ in range(3):
             self.device.writecmd(self.enable_app_cmd)
             self.device.readcmd()
         self.info('Enabled')
@@ -95,7 +95,7 @@ class Max342xPhy(PhyInterface):
 
     def read_register(self, reg_num, ack=False):
         self.verbose('Reading register 0x%02x' % reg_num)
-        mask = 0 if not ack else 1
+        mask = 1 if ack else 0
         self.read_register_cmd.data = struct.pack('<BB', (reg_num << 3) | mask, 0)
         self.device.writecmd(self.read_register_cmd)
         resp = self.device.readcmd()
@@ -105,7 +105,7 @@ class Max342xPhy(PhyInterface):
 
     def write_register(self, reg_num, value, ack=False):
         self.verbose('Writing register 0x%02x with value 0x%02x' % (reg_num, value))
-        mask = 2 if not ack else 3
+        mask = 3 if ack else 2
         self.write_register_cmd.data = struct.pack('<BB', (reg_num << 3) | mask, value)
         self.device.writecmd(self.write_register_cmd)
         self.device.readcmd()
@@ -121,7 +121,7 @@ class Max342xPhy(PhyInterface):
     def connect(self, usb_device):
         super(Max342xPhy, self).connect(usb_device)
         self.write_register(Regs.usb_control, USBCTL.vbgate | USBCTL.connect)
-        self.info('Connected device %s' % self.connected_device.name)
+        self.info(f'Connected device {self.connected_device.name}')
 
     def disconnect(self):
         self.write_register(Regs.usb_control, USBCTL.vbgate)
@@ -161,7 +161,7 @@ class Max342xPhy(PhyInterface):
             fifo_reg = Regs.ep3_in_fifo
             bc_reg = Regs.ep3_in_byte_count
         else:
-            raise ValueError('endpoint ' + str(ep_num) + ' not supported')
+            raise ValueError(f'endpoint {str(ep_num)} not supported')
 
         # FIFO buffer is only 64 bytes, must loop
         while len(data) > 64:
@@ -217,8 +217,7 @@ class Max342xPhy(PhyInterface):
                 self.connected_device.handle_request(b)
 
             if irq & PINCTL.out1_data_avail:
-                data = self.read_from_endpoint(1)
-                if data:
+                if data := self.read_from_endpoint(1):
                     self.connected_device.handle_data_available(1, data)
                 self.clear_irq_bit(Regs.endpoint_irq, PINCTL.out1_data_avail)
 

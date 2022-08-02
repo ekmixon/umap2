@@ -128,10 +128,10 @@ class GadgetFsPhy(PhyInterface):
         for filename in os.listdir(self.gadgetfs_dir):
             if filename in GadgetFsPhy.control_filenames:
                 full_path = os.path.join(self.gadgetfs_dir, filename)
-                self.info('Found a control file: %s' % (full_path))
+                self.info(f'Found a control file: {full_path}')
                 return full_path
         raise Exception(
-            'No control file found in %s. Is the gadgetfs driver loaded?' % (self.gadgetfs_dir)
+            f'No control file found in {self.gadgetfs_dir}. Is the gadgetfs driver loaded?'
         )
 
     def _is_high_speed(self):
@@ -143,7 +143,7 @@ class GadgetFsPhy(PhyInterface):
     def connect(self, device):
         super(GadgetFsPhy, self).connect(device)
         self.control_fd = os.open(self.control_filename, os.O_RDWR | os.O_NONBLOCK)
-        self.debug('Opened control file: %s' % (self.control_filename))
+        self.debug(f'Opened control file: {self.control_filename}')
         set_highspeed_endpoints(self.connected_device)
         buff = struct.pack('I', GFS_CMD_INIT_DEVICE)
         for conf in self.connected_device.configurations:
@@ -217,9 +217,7 @@ class GadgetFsPhy(PhyInterface):
             else:
                 os.read(self.control_fd, 0)
         except OSError as oe:
-            # 51: Level two halted (e.g. stalled)
-            if oe.errno == 51:
-                pass
+            pass
 
     def _handle_ep0(self):
         # read event

@@ -78,7 +78,9 @@ class USBEndpoint(USBBaseActor):
 
     def default_handler(self, req):
         self.phy.send_on_endpoint(0, b'')
-        self.debug('Received an unknown USBEndpoint request: %s, returned an empty response' % req)
+        self.debug(
+            f'Received an unknown USBEndpoint request: {req}, returned an empty response'
+        )
 
     def send(self, data):
         self.phy.send_on_endpoint(self.number, data)
@@ -108,6 +110,4 @@ class USBEndpoint(USBBaseActor):
         return d
 
     def _get_max_packet_size(self, usb_type):
-        if usb_type == 'highspeed':
-            return 512
-        return self.max_packet_size
+        return 512 if usb_type == 'highspeed' else self.max_packet_size

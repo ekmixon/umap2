@@ -57,7 +57,7 @@ def mutable(stage, silent=False):
                 self = func_self
             response = None
             valid_req = kwargs.get('valid', False)
-            info = self.info if not silent else self.debug
+            info = self.debug if silent else self.info
             if not valid_req:
                 log_stage(stage)
                 session_data = self.get_session_data(stage)
@@ -67,10 +67,10 @@ def mutable(stage, silent=False):
             try:
                 if response is not None:
                     if not silent:
-                        info('Got mutation for stage %s' % stage)
+                        info(f'Got mutation for stage {stage}')
                 else:
                     if valid_req:
-                        info('Calling %s' % (func.__name__))
+                        info(f'Calling {func.__name__}')
                     else:
                         info('Calling %s (stage: "%s")' % (func.__name__, stage))
                     response = func(self, *args, **kwargs)
@@ -79,7 +79,9 @@ def mutable(stage, silent=False):
                 self.logger.error(''.join(traceback.format_stack()))
                 raise e
             if response is not None:
-                info('Response: %s' % binascii.hexlify(response))
+                info(f'Response: {binascii.hexlify(response)}')
             return response
+
         return wrapper
+
     return wrap_f

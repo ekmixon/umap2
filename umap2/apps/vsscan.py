@@ -73,18 +73,18 @@ class DBEntry(object):
     def __str__(self):
         s = 'vid:pid %04x:%04x' % (self.vid, self.pid)
         if self.vendor_name:
-            s += ', vendor: %s' % self.vendor_name
+            s += f', vendor: {self.vendor_name}'
         if self.product_name:
-            s += ', product: %s' % self.product_name
+            s += f', product: {self.product_name}'
         if self.drivers:
             if self.os and self.os in self.drivers:
-                s += ', driver: %s' % self.drivers[self.os]
+                s += f', driver: {self.drivers[self.os]}'
             else:
-                s += ', drivers: %s' % self.drivers
+                s += f', drivers: {self.drivers}'
         if self.constraints:
-            s += ', constraints: %s' % self.constraints
+            s += f', constraints: {self.constraints}'
         if self.info:
-            s += ', info: %s' % self.info
+            s += f', info: {self.info}'
         return s
 
     def vidpid(self):
@@ -115,8 +115,7 @@ class Umap2VSScanApp(Umap2App):
         self.stop_signal_received = False
         self.between_delay = 5
         signal.signal(signal.SIGINT, self.signal_handler)
-        timeout = self.options['--timeout']
-        if timeout:
+        if timeout := self.options['--timeout']:
             self.scan_session.timeout = int(timeout)
         self.single_step = False
         if self.options['--single_step']:
@@ -126,15 +125,19 @@ class Umap2VSScanApp(Umap2App):
         self.os = self.options['--os']
         if not self.os:
             self.os = OS.LINUX
-        else:
-            if self.os not in [getattr(OS, x) for x in dir(OS) if not x.startswith('_')]:
-                self.error('Unsupported OS: %s choose a supported OS or add the new one to the OS class' % self.os)
+        elif self.os not in [getattr(OS, x) for x in dir(OS) if not x.startswith('_')]:
+            self.error(
+                f'Unsupported OS: {self.os} choose a supported OS or add the new one to the OS class'
+            )
 
     def get_device_info(self, device):
         info = []
         if device.endpoints:
-            for e in device.endpoints:
-                info.append(device.endpoints[e].get_descriptor(valid=True))
+            info.extend(
+                device.endpoints[e].get_descriptor(valid=True)
+                for e in device.endpoints
+            )
+
         else:
             info = ''
         if info:
@@ -143,7 +146,7 @@ class Umap2VSScanApp(Umap2App):
             return 'device not reached set configuration state'
 
     def load_db_from_file(self, db_file):
-        self.logger.info('loading vid_pid db file: %s' % db_file)
+        self.logger.info(f'loading vid_pid db file: {db_file}')
         dirpath, filename = os.path.split(db_file)
         modulename = filename[:-3]
         if dirpath in sys.path:
@@ -206,7 +209,10 @@ class Umap2VSScanApp(Umap2App):
         num_supported = len(self.scan_session.supported)
         # num_unsupported = len(self.scan_session.unsupported)
         self.logger.always('----------------------------------------')
-        self.logger.always('Found %s supported device(s) (out of %s):' % (num_supported, self.scan_session.current))
+        self.logger.always(
+            f'Found {num_supported} supported device(s) (out of {self.scan_session.current}):'
+        )
+
         for i, db_entry in enumerate(self.scan_session.supported):
             self.logger.always('%d. %s' % (i, db_entry))
         self.logger.always('----------------------------------------')
@@ -217,16 +223,17 @@ class Umap2VSScanApp(Umap2App):
                 pvp = self.scan_session.db[prev].vidpid()
             else:
                 pvp = None
-            self.logger.always('%s (%s)' % (self.scan_session.db[i], pvp))
+            self.logger.always(f'{self.scan_session.db[i]} ({pvp})')
 
     def run(self):
         self.build_scan_session()
         self.logger.always('Scanning host for supported vendor specific devices')
         phy = self.load_phy(self.options['--phy'])
         self.prev_index = None
-        while self.scan_session.current < (len(self.scan_session.db)):
-            if self.stop_signal_received:
-                break
+        while (
+            self.scan_session.current < (len(self.scan_session.db))
+            and not self.stop_signal_received
+        ):
             db_entry = self.scan_session.db[self.scan_session.current]
             db_entry.os = self.os
             vid = db_entry.vid
@@ -234,10 +241,10 @@ class Umap2VSScanApp(Umap2App):
             if not self.options['--exhaustive']:
                 driver = db_entry.drivers.get(self.os, None)
                 if driver and driver in self.scan_session.supported_drivers:
-                    self.logger.always('skipping entry: %s' % db_entry)
+                    self.logger.always(f'skipping entry: {db_entry}')
                     self.sync_and_increment_session()
                     continue
-            self.logger.always('Testing support for %s' % db_entry)
+            self.logger.always(f'Testing support for {db_entry}')
             self.setup_packet_received = False
             self.current_usb_function_supported = False
             self.start_time = time.time()
@@ -253,8 +260,7 @@ class Umap2VSScanApp(Umap2App):
             if self.current_usb_function_supported:
                 db_entry.info = self.get_device_info(device)
                 self.scan_session.supported.append(db_entry)
-                driver = db_entry.drivers.get(self.os, None)
-                if driver:
+                if driver := db_entry.drivers.get(self.os, None):
                     self.scan_session.supported_drivers.append(db_entry.drivers[self.os])
             # else:
             #     db_entry.info = self.get_device_info(device)
